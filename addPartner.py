@@ -1,19 +1,17 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QLineEdit, QPushButton, QMessageBox
+from PyQt6.QtWidgets import QComboBox, QLabel, QDialog, QMessageBox, QVBoxLayout, QLineEdit, QPushButton
 from connect_to_database import connect_db
 
-class ChangePartner(QDialog):
-    def __init__(self, parent=None, partner=None):
+
+class AddPartner(QDialog):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Изменить Партнера")
+
         self.layout = QVBoxLayout(self)
-
-
-        self.part = partner
 
         self.type_combo = QComboBox()
         try:
             cursor = connect_db.cursor()
-            cursor.execute("select id, name from Types ")
+            cursor.execute('select id, name from Types')
             type = cursor.fetchall()
             cursor.close()
         except Exception as err:
@@ -22,34 +20,33 @@ class ChangePartner(QDialog):
 
         self.type = {name : tid for tid, name in type}
         self.type_combo.addItems(self.type.keys())
-        self.type_combo.setCurrentText(str(self.part['type']))
+
+        self.layout.addWidget(self.type_combo)
 
         self.layout.addWidget(QLabel("Тип:"))
         self.layout.addWidget(self.type_combo)
 
-        self.name = QLineEdit(self.part['name'])
+        self.name = QLineEdit()
         self.layout.addWidget(QLabel("Наименование:"))
         self.layout.addWidget(self.name)
 
-        fio = self.part['FIO'].split()
-
-        self.last_name = QLineEdit(fio[0])
+        self.last_name = QLineEdit()
         self.layout.addWidget(QLabel("Фамилия:"))
         self.layout.addWidget(self.last_name)
 
-        self.first_name = QLineEdit(fio[1])
+        self.first_name = QLineEdit()
         self.layout.addWidget(QLabel("Имя:"))
         self.layout.addWidget(self.first_name)
 
-        self.patronimic = QLineEdit(fio[2])
+        self.patronimic = QLineEdit()
         self.layout.addWidget(QLabel("Отчество:"))
         self.layout.addWidget(self.patronimic)
 
-        self.phone = QLineEdit(str(self.part['phone']))
+        self.phone = QLineEdit()
         self.layout.addWidget(QLabel("Телефон:"))
         self.layout.addWidget(self.phone)
 
-        self.rating = QLineEdit(str(self.part['rating']))
+        self.rating = QLineEdit()
         self.layout.addWidget(QLabel("Рейтинг:"))
         self.layout.addWidget(self.rating)
 
@@ -58,7 +55,7 @@ class ChangePartner(QDialog):
         self.layout.addWidget(self.saveBtn)
 
 
-    def save_changes(self):
+    def add_partner(self):
         type_name = self.type_combo.currentText()
         id_type = self.type.get(type_name)
 
@@ -76,7 +73,6 @@ class ChangePartner(QDialog):
             rating = int(rating_text)
         except:
             QMessageBox.critical(self, "Ошибка", "Рейтинг должен быть целым числом")
-            return id_type, name, fio, phone, self.part['rating'], 0
+            return 0, 0, 0, 0, 0, 0
 
         return id_type, name, fio, phone, rating, 1
-

@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QMainWindow, QFrame, QLabel, QMessageBox, QVBoxLayou
 from connect_to_database import connect_db
 from forms.Partner import Ui_MainWindow
 from changePartner import ChangePartner
+from addPartner import AddPartner
 
 
 class PartnersWidow(QMainWindow):
@@ -31,7 +32,7 @@ class PartnersWidow(QMainWindow):
             cursor.execute("select p.id, t.name as type, p.name, p.FIO, p.phone, p.rating "
                            "from Partners p "
                            "join Types t on t.id = p.type_id "
-                           "order by p.id asc ")
+                           "order by p.id desc ")
             self.partners = cursor.fetchall()
             cursor.close()
 
@@ -104,17 +105,20 @@ class PartnersWidow(QMainWindow):
                            "where partner_id = %s "
                            "group by partner_id ", (p_id,))
             sale = cursor.fetchone()
-            sale_sum = int(sale['summ'])
-            cursor.close()
+            if sale:
+                sale_sum = int(sale['summ'])
+                cursor.close()
 
-            if sale_sum < 10000:
-                return '0%'
-            elif 10000 < sale_sum < 50000:
-                return '5%'
-            elif 50000 < sale_sum < 300000:
-                return '10%'
+                if sale_sum < 10000:
+                    return '0%'
+                elif 10000 < sale_sum < 50000:
+                    return '5%'
+                elif 50000 < sale_sum < 300000:
+                    return '10%'
+                else:
+                    return '15%'
             else:
-                return '15%'
+                return '0%'
 
         except Exception as err:
             QMessageBox.critical(self, "Ошибка!", f"Произошла ошибка {err} при расчете скидки!")
@@ -124,32 +128,60 @@ class PartnersWidow(QMainWindow):
         dialog = ChangePartner(self, part)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             try:
-                id_type, name, fio, phone, rating = dialog.save_changes()
+                id_type, name, fio, phone, rating, flag = dialog.save_changes()
             except Exception as err:
                 print(err)
             try:
-                cursor = connect_db.cursor()
-                # SQL-запрос для обновления данных партнера
-                query = """
-                    UPDATE Partners 
-                    SET type_id = %s, 
-                        name = %s, 
-                        FIO = %s, 
-                        phone = %s, 
-                        rating = %s 
-                    WHERE id = %s
-                    """
-                # Параметры для запроса (предполагается, что self.partner_id существует)
-                params = (id_type, name, fio, phone, rating, part['id'])
-                cursor.execute(query, params)
-                connect_db.commit()
-                cursor.close()
-                QMessageBox.information(self, "Успех", "Данные успешно обновлены")
-                self.load_partners()
+                if flag:
+                    cursor = connect_db.cursor()
+                    # SQL-запрос для обновления данных партнера
+                    query = """
+                        UPDATE Partners 
+                        SET type_id = %s, 
+                            name = %s, 
+                            FIO = %s, 
+                            phone = %s, 
+                            rating = %s 
+                        WHERE id = %s
+                        """
+                    params = (id_type, name, fio, phone, rating, part['id'])
+                    cursor.execute(query, params)
+                    connect_db.commit()
+                    cursor.close()
+
+                    QMessageBox.information(self, "Успех", "Данные успешно обновлены")
+                    self.load_partners()
+                else:
+                    QMessageBox.critical(self, "Оповещение", "Данные не обновлены")
             except Exception as e:
                 connect_db.rollback()
                 QMessageBox.critical(self, "Ошибка базы данных", f"Произошла ошибка: {str(e)}")
                 print(f"Database error: {e}")
 
     def add_partner(self):
-        pass
+        dialog = AddPartner(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            try:
+                id_type, name, fio, phone, rating, flag = dialog.add_partner()
+            except Exception as err:
+                print(err)
+            try:
+                if flag:
+                    cursor = connect_db.cursor()
+                    # SQL-запрос для обновления данных партнера
+                    query = """
+                        insert into Partners (type_id, name, FIO, phone, rating) 
+                        values (%s, %s, %s, %s, %s)"""
+                    params = (id_type, name, fio, phone, rating)
+                    cursor.execute(query, params)
+                    connect_db.commit()
+                    cursor.close()
+
+                    QMessageBox.information(self, "Успех", "Данные успешно обновлены")
+                    self.load_partners()
+                else:
+                    QMessageBox.critical(self, "Оповещение", "Данные не обновлены")
+            except Exception as e:
+                connect_db.rollback()
+                QMessageBox.critical(self, "Ошибка базы данных", f"Произошла ошибка: {str(e)}")
+                print(f"Database error: {e}")
