@@ -1,5 +1,5 @@
 from PyQt6 import QtCore
-from PyQt6.QtWidgets import QTableWidget, QMessageBox, QMainWindow, QHeaderView, QTableWidgetItem
+from PyQt6.QtWidgets import QMainWindow, QHeaderView, QTableWidgetItem
 from forms.Sales import Ui_MainWindow
 from connect_to_database import connect_db
 
